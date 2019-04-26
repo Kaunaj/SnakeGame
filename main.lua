@@ -17,7 +17,6 @@ TILE_STONE = 4
 local level = 1
 
 -- How fast the snake moves
--- In this case, it moves 1 tile in 0.1 sec
 SNAKE_SPEED = math.max(0.05, (0.11 - level * 0.01))
 
 local largeFont = love.graphics.newFont(32)
@@ -26,6 +25,7 @@ local hugeFont = love.graphics.newFont(128)
 local appleSound = love.audio.newSource('apple.wav', 'static')
 local newLevelSound = love.audio.newSource('newlevel.wav', 'static')
 local backgroundMusic = love.audio.newSource('backgroundmusic.wav', 'static')
+local gameOverSound = love.audio.newSource('gameover.wav', 'static')
 
 local score = 0
 local gameOver = false
@@ -52,9 +52,13 @@ function love.load()
     })
     love.graphics.setFont(largeFont)
     math.randomseed(os.time())
-    initializeGrid()
+    
     backgroundMusic:setLooping(true)
     backgroundMusic:play()
+
+    initializeGrid()
+    initializeSnake()
+    
     tileGrid[snakeTiles[1][1]][snakeTiles[1][2]] = TILE_SNAKE_HEAD
 end
 
@@ -80,14 +84,14 @@ function love.keypressed(key)
         end
     end
 
-    if gameOver or gameStart then
-        -- Start new game
+    if gameStart then
         if key == 'enter' or key == 'return' then
             initializeGrid()
             initializeSnake()
             score = 0
-            gameOver = false
+            level = 1
             gameStart = false
+            gameOver = false
         end
     end
 end
@@ -134,6 +138,8 @@ function love.update(dt)
                 tileGrid[snakeX][snakeY] == TILE_STONE then
                 
                 gameOver = true
+                backgroundMusic:stop()
+                gameOverSound:play()
                 
             end
 
@@ -148,11 +154,10 @@ function love.update(dt)
                 appleSound:play()
 
                 -- Increase level if player reaches a certain score
-                if score == (level * 5) then
+                if score == (level * 10) then
                     level = level + 1
                     SNAKE_SPEED = math.max(0.05, (0.11 - level * 0.01))
-                    newLevel = true  
-
+                    newLevel = true
                     initializeGrid()
                     initializeSnake()
                     newLevelSound:play()
@@ -175,12 +180,11 @@ function love.update(dt)
                 table.remove(snakeTiles) -- by default, removes the last element in table
             end
 
-            -- If snake is longer than 1 tile
+        -- If snake is longer than 1 tile
             if #snakeTiles > 1 then
                 -- Set prior head to a body value (to see color change)
                 tileGrid[priorHeadX][priorHeadY] = TILE_SNAKE_BODY
             end
-
             -- Update snake head at new location
             tileGrid[snakeX][snakeY] = TILE_SNAKE_HEAD
 
@@ -208,8 +212,6 @@ function love.draw()
         drawGrid()
         love.graphics.setColor(1, 1, 1, 1)
         love.graphics.print("Score: " .. tostring(score), 10, 10)
-
-        love.graphics.setColor(1, 1, 1, 1)
         love.graphics.printf("Level: " .. tostring(level), 0, 10, WINDOW_WIDTH - 10, 'right')
         
         if newLevel then
@@ -220,11 +222,11 @@ function love.draw()
                 WINDOW_WIDTH, 'center'
             )
             love.graphics.setFont(largeFont)
-                love.graphics.printf(
+            love.graphics.printf(
                 'Press Space to continue', 
                 0, WINDOW_HEIGHT/2 + 96,
                 WINDOW_WIDTH, 'center'
-            )    
+            )
         elseif gameOver then
             drawGameOver()
         end
@@ -236,11 +238,12 @@ function drawGameOver()
     love.graphics.printf(
         'GAME OVER', 
         0, WINDOW_HEIGHT/2 - 64, 
-        WINDOW_WIDTH, 'center')
+        WINDOW_WIDTH, 'center'
+    )
     
     love.graphics.setFont(largeFont)
     love.graphics.printf(
-        'Press Enter to start new game', 
+        'God dammit! Me hungry still ._.', 
         0, WINDOW_HEIGHT/2 + 96,
         WINDOW_WIDTH, 'center'
     )
@@ -332,8 +335,8 @@ function generateThing(thing)
 end
 
 function initializeSnake()
-    snakeX, snakeY = 1, 1
     snakeMoving = 'right'
+    snakeX, snakeY = 1, 1
     snakeTiles = {
         {snakeX, snakeY}
     }
