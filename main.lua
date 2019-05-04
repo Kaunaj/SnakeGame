@@ -17,20 +17,20 @@ TILE_STONE = 4
 local level = 1
 
 -- How fast the snake moves
-SNAKE_SPEED = math.max(0.05, (0.11 - level * 0.01))
+SNAKE_SPEED = math.max(0.10, (0.20 - level * 0.03))
 
 local largeFont = love.graphics.newFont(32)
 local hugeFont = love.graphics.newFont(128)
 
 local appleSound = love.audio.newSource('apple.wav', 'static')
 local newLevelSound = love.audio.newSource('newlevel.wav', 'static')
-local backgroundMusic = love.audio.newSource('backgroundmusic.wav', 'static')
 local gameOverSound = love.audio.newSource('gameover.wav', 'static')
 
 local score = 0
 local gameOver = false
 local gameStart = true
 local newLevel = true
+local gameFinish = false
 
 -- Create an empty table
 local tileGrid = {}
@@ -52,13 +52,10 @@ function love.load()
     })
     love.graphics.setFont(largeFont)
     math.randomseed(os.time())
-    
-    backgroundMusic:setLooping(true)
-    backgroundMusic:play()
 
     initializeGrid()
     initializeSnake()
-    
+
     tileGrid[snakeTiles[1][1]][snakeTiles[1][2]] = TILE_SNAKE_HEAD
 end
 
@@ -84,14 +81,16 @@ function love.keypressed(key)
         end
     end
 
-    if gameStart then
+    if gameStart or gameOver or gameFinish then
         if key == 'enter' or key == 'return' then
-            initializeGrid()
-            initializeSnake()
             score = 0
             level = 1
+            SNAKE_SPEED = math.max(0.10, (0.20 - level * 0.03))
+            initializeGrid()
+            initializeSnake()
             gameStart = false
             gameOver = false
+            gameFinish = false
         end
     end
 end
@@ -99,7 +98,7 @@ end
 -- The calculations happen here
 -- dt = delta time; the time between two frames
 function love.update(dt)
-    if not gameOver and not newLevel then
+    if not gameOver and not newLevel and not gameFinish then
         snakeTimer = snakeTimer + dt
         local priorHeadX, priorHeadY = snakeX, snakeY
 
@@ -136,11 +135,10 @@ function love.update(dt)
             -- Game over if snake runs into itself or a stone
             if tileGrid[snakeX][snakeY] == TILE_SNAKE_BODY or 
                 tileGrid[snakeX][snakeY] == TILE_STONE then
-                
+
                 gameOver = true
-                backgroundMusic:stop()
                 gameOverSound:play()
-                
+
             end
 
             -- Now we need to update tileGrid (the view)
@@ -154,9 +152,13 @@ function love.update(dt)
                 appleSound:play()
 
                 -- Increase level if player reaches a certain score
-                if score == (level * 10) then
-                    level = level + 1
-                    SNAKE_SPEED = math.max(0.05, (0.11 - level * 0.01))
+                if score == (level * 5) then
+                    if level < 5 then
+                        level = level + 1
+                    else
+                        gameFinish = true
+                    end
+                    SNAKE_SPEED = math.max(0.10, (0.20 - level * 0.03)) 
                     newLevel = true
                     initializeGrid()
                     initializeSnake()
@@ -198,7 +200,7 @@ function love.draw()
         love.graphics.setFont(hugeFont)
         love.graphics.printf(
             "SNAKE",
-            0, WINDOW_HEIGHT/2 - 64,
+            0, WINDOW_HEIGHT/2 - 96,
             WINDOW_WIDTH, 'center'
         )
         love.graphics.setFont(largeFont)
@@ -207,7 +209,8 @@ function love.draw()
             0, WINDOW_HEIGHT/2 + 96,
             WINDOW_WIDTH, 'center'
         )
-
+    elseif gameFinish then
+        drawGameFinish()
     else
         drawGrid()
         love.graphics.setColor(1, 1, 1, 1)
@@ -218,7 +221,7 @@ function love.draw()
             love.graphics.setFont(hugeFont)
             love.graphics.printf(
                 "LEVEL " .. tostring(level),
-                0, WINDOW_HEIGHT/2 - 64,
+                0, WINDOW_HEIGHT/2 - 96,
                 WINDOW_WIDTH, 'center'
             )
             love.graphics.setFont(largeFont)
@@ -233,11 +236,34 @@ function love.draw()
     end
 end
 
+function drawGameFinish()
+    love.graphics.setFont(hugeFont)
+    love.graphics.printf(
+        'Congrats!', 
+        0, WINDOW_HEIGHT/2 - 96, 
+        WINDOW_WIDTH, 'center'
+    )
+    
+    love.graphics.setFont(largeFont)
+    love.graphics.printf(
+        'Thanks human, me full now ^-^', 
+        0, WINDOW_HEIGHT/2 + 96,
+        WINDOW_WIDTH, 'center'
+    )
+
+    love.graphics.setFont(largeFont)
+    love.graphics.printf(
+        'Press Enter to start new game', 
+        0, WINDOW_HEIGHT/2 + 160,
+        WINDOW_WIDTH, 'center'
+    )
+end
+
 function drawGameOver()
     love.graphics.setFont(hugeFont)
     love.graphics.printf(
         'GAME OVER', 
-        0, WINDOW_HEIGHT/2 - 64, 
+        0, WINDOW_HEIGHT/2 - 96, 
         WINDOW_WIDTH, 'center'
     )
     
@@ -245,6 +271,13 @@ function drawGameOver()
     love.graphics.printf(
         'God dammit! Me hungry still ._.', 
         0, WINDOW_HEIGHT/2 + 96,
+        WINDOW_WIDTH, 'center'
+    )
+
+    love.graphics.setFont(largeFont)
+    love.graphics.printf(
+        'Press Enter to restart', 
+        0, WINDOW_HEIGHT/2 + 160,
         WINDOW_WIDTH, 'center'
     )
 end
@@ -352,7 +385,7 @@ function initializeGrid()
         end
     end
 
-    for i = 1, math.min(20, level * 2) do
+    for i = 1, math.min(20, level * 4) do
         generateThing(TILE_STONE)
     end
     generateThing(TILE_APPLE)
