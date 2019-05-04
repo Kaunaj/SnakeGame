@@ -17,7 +17,7 @@ TILE_STONE = 4
 local level = 1
 
 -- How fast the snake moves
-SNAKE_SPEED = math.max(0.10, (0.20 - level * 0.03))
+SNAKE_SPEED = math.max(0.10, (0.18 - level * 0.02))
 
 local largeFont = love.graphics.newFont(32)
 local hugeFont = love.graphics.newFont(128)
@@ -85,7 +85,7 @@ function love.keypressed(key)
         if key == 'enter' or key == 'return' then
             score = 0
             level = 1
-            SNAKE_SPEED = math.max(0.10, (0.20 - level * 0.03))
+            SNAKE_SPEED = math.max(0.10, (0.18 - level * 0.02))
             initializeGrid()
             initializeSnake()
             gameStart = false
@@ -158,7 +158,7 @@ function love.update(dt)
                     else
                         gameFinish = true
                     end
-                    SNAKE_SPEED = math.max(0.10, (0.20 - level * 0.03)) 
+                    SNAKE_SPEED = math.max(0.10, (0.18 - level * 0.02)) 
                     newLevel = true
                     initializeGrid()
                     initializeSnake()
