@@ -152,7 +152,7 @@ function love.update(dt)
                 appleSound:play()
 
                 -- Increase level if player reaches a certain score
-                if score == (level * 5) then
+                if score == (level * 10) then
                     if level < 5 then
                         level = level + 1
                     else
